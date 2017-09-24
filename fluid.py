@@ -1,4 +1,9 @@
+"""
+Lattice-Boltzmann method for fluid simulation
 
+Simple rectangular barrier 
+@author: Jishnu
+"""
 import numpy, time, matplotlib.pyplot, matplotlib.animation
 
 height = 80							# dimensions of lattice
@@ -52,7 +57,7 @@ def stream():
 	nW  = numpy.roll(nW,  -1, axis=1)
 	nNW = numpy.roll(nNW, -1, axis=1)
 	nSW = numpy.roll(nSW, -1, axis=1)
-	# Useing boolean arrays to handle barrier collisions (bounce-back):
+	# Using boolean arrays to handle barrier collisions (bounce-back):
 	nN[barrierN] = nS[barrier]
 	nS[barrierS] = nN[barrier]
 	nE[barrierE] = nW[barrier]
