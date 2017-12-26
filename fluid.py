@@ -6,15 +6,15 @@ Simple rectangular barrier
 """
 import numpy, time, matplotlib.pyplot, matplotlib.animation
 
-height = 80							# dimensions of lattice
+height = 80						# dimensions of lattice
 width = 200
 viscosity = 0.02					# viscosity
-omega = 1 / (3*viscosity + 0.5)		# parameter for "relaxation"
-u0 = 0.1							# initial and in-flow speed
+omega = 1 / (3*viscosity + 0.5)				# parameter for "relaxation"
+u0 = 0.1						# initial and in-flow speed
 f_n = 4.0/9.0						# lattice-Boltzmann weight factors
 o_n   = 1.0/9.0
 o_36  = 1.0/36.0
-performanceData = True				# True if performance data is needed
+performanceData = True					# True if performance data is needed
 
 # Initialize arrays --steady rightward flow:
 n0 = f_n * (numpy.ones((height,width)) - 1.5*u0**2)	# particle densities along 9 directions
@@ -31,11 +31,11 @@ ux = (nE + nNE + nSE - nW - nNW - nSW) / rho				# macroscopic x velocity
 uy = (nN + nNE + nNW - nS - nSE - nSW) / rho				# macroscopic y velocity
 
 # Initialize barriers:
-barrier = numpy.zeros((height,width), bool)										# True wherever there's a barrier
+barrier = numpy.zeros((height,width), bool)						# True wherever there's a barrier
 barrier[(height/2)-8:(height/2)+8, (height/2)-4:(height/2)+4] = True			# simple linear barrier
-barrierN = numpy.roll(barrier,  1, axis=0)										# sites just north of barriers
-barrierS = numpy.roll(barrier, -1, axis=0)										# sites just south of barriers
-barrierE = numpy.roll(barrier,  1, axis=1)										# etc.
+barrierN = numpy.roll(barrier,  1, axis=0)						# sites just north of barriers
+barrierS = numpy.roll(barrier, -1, axis=0)						# sites just south of barriers
+barrierE = numpy.roll(barrier,  1, axis=1)						
 barrierW = numpy.roll(barrier, -1, axis=1)
 barrierNE = numpy.roll(barrierN,  1, axis=1)
 barrierNW = numpy.roll(barrierN, -1, axis=1)
@@ -45,13 +45,13 @@ barrierSW = numpy.roll(barrierS, -1, axis=1)
 # Move all particles by one step along their directions of motion (pbc):
 def stream():
 	global nN, nS, nE, nW, nNE, nNW, nSE, nSW
-	nN  = numpy.roll(nN,   1, axis=0)	# axis 0 is north-south; + direction is north
+	nN  = numpy.roll(nN,   1, axis=0)			# axis 0 is north-south; + direction is north
 	nNE = numpy.roll(nNE,  1, axis=0)
 	nNW = numpy.roll(nNW,  1, axis=0)
 	nS  = numpy.roll(nS,  -1, axis=0)
 	nSE = numpy.roll(nSE, -1, axis=0)
 	nSW = numpy.roll(nSW, -1, axis=0)
-	nE  = numpy.roll(nE,   1, axis=1)	# axis 1 is east-west; + direction is east
+	nE  = numpy.roll(nE,   1, axis=1)			# axis 1 is east-west; + direction is east
 	nNE = numpy.roll(nNE,  1, axis=1)
 	nSE = numpy.roll(nSE,  1, axis=1)
 	nW  = numpy.roll(nW,  -1, axis=1)
