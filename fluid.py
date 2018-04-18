@@ -9,7 +9,7 @@ import numpy, time, matplotlib.pyplot, matplotlib.animation
 height = 80						# dimensions of lattice
 width = 200
 viscosity = 0.02					# viscosity
-omega = 1 / (3*viscosity + 0.5)				# parameter for "relaxation"
+omega = 1 / (3*viscosity + 0.5)				# parameter for relaxation
 u0 = 0.1						# initial and in-flow speed
 f_n = 4.0/9.0						# lattice-Boltzmann weight factors
 o_n   = 1.0/9.0
@@ -26,7 +26,7 @@ nNE = o_36 * (numpy.ones((height,width)) + 3*u0 + 4.5*u0**2 - 1.5*u0**2)
 nSE = o_36 * (numpy.ones((height,width)) + 3*u0 + 4.5*u0**2 - 1.5*u0**2)
 nNW = o_36 * (numpy.ones((height,width)) - 3*u0 + 4.5*u0**2 - 1.5*u0**2)
 nSW = o_36 * (numpy.ones((height,width)) - 3*u0 + 4.5*u0**2 - 1.5*u0**2)
-rho = n0 + nN + nS + nE + nW + nNE + nSE + nNW + nSW		# macroscopic density
+rho = n0 + nN + nS + nE + nW + nNE + nSE + nNW + nSW			# macroscopic density
 ux = (nE + nNE + nSE - nW - nNW - nSW) / rho				# macroscopic x velocity
 uy = (nN + nNE + nNW - nS - nSE - nSW) / rho				# macroscopic y velocity
 
@@ -73,10 +73,10 @@ def collide():
 	rho = n0 + nN + nS + nE + nW + nNE + nSE + nNW + nSW
 	ux = (nE + nNE + nSE - nW - nNW - nSW) / rho
 	uy = (nN + nNE + nNW - nS - nSE - nSW) / rho
-	ux2 = ux * ux				# pre-compute terms used repeatedly...
+	ux2 = ux * ux				
 	uy2 = uy * uy
 	u2 = ux2 + uy2
-	omu215 = 1 - 1.5*u2			# "one minus u2 times 1.5"
+	omu215 = 1 - 1.5*u2			
 	uxuy = ux * uy
 	n0 = (1-omega)*n0 + omega * f_n * rho * omu215
 	nN = (1-omega)*nN + omega * o_n * rho * (omu215 + 3*uy + 4.5*uy2)
@@ -87,7 +87,8 @@ def collide():
 	nNW = (1-omega)*nNW + omega * o_36 * rho * (omu215 + 3*(-ux+uy) + 4.5*(u2-2*uxuy))
 	nSE = (1-omega)*nSE + omega * o_36 * rho * (omu215 + 3*(ux-uy) + 4.5*(u2-2*uxuy))
 	nSW = (1-omega)*nSW + omega * o_36 * rho * (omu215 + 3*(-ux-uy) + 4.5*(u2+2*uxuy))
-	# Force steady rightward flow at ends (no need to set 0, N, and S components):
+	# Force steady rightward flow at ends 
+	# no need to set 0, N, and S component
 	nE[:,0] = o_n * (1 + 3*u0 + 4.5*u0**2 - 1.5*u0**2)
 	nW[:,0] = o_n * (1 - 3*u0 + 4.5*u0**2 - 1.5*u0**2)
 	nNE[:,0] = o_36 * (1 + 3*u0 + 4.5*u0**2 - 1.5*u0**2)
@@ -95,22 +96,22 @@ def collide():
 	nNW[:,0] = o_36 * (1 - 3*u0 + 4.5*u0**2 - 1.5*u0**2)
 	nSW[:,0] = o_36 * (1 - 3*u0 + 4.5*u0**2 - 1.5*u0**2)
 
-# Compute curl of the macroscopic velocity field:
+# Compute curl of the  velocity field:
 def curl(ux, uy):
 	return numpy.roll(uy,-1,axis=1) - numpy.roll(uy,1,axis=1) - numpy.roll(ux,-1,axis=0) + numpy.roll(ux,1,axis=0)
 
-# graphics and animation...
+# for animation.
 theFig = matplotlib.pyplot.figure(figsize=(8,3))
 fluidImage = matplotlib.pyplot.imshow(curl(ux, uy), origin='lower', norm=matplotlib.pyplot.Normalize(-.1,.1),
 									cmap=matplotlib.pyplot.get_cmap('jet'), interpolation='none')
-		# for more details on animation look http://www.loria.fr/~rougier/teaching/matplotlib/#colormaps
+		# Taken from http://www.loria.fr/~rougier/teaching/matplotlib/#colormaps
 bImageArray = numpy.zeros((height, width, 4), numpy.uint8)	# an RGBA image
 bImageArray[barrier,3] = 255								# set alpha=255 barrier sites only
 barrierImage = matplotlib.pyplot.imshow(bImageArray, origin='lower', interpolation='none')
 
 # Function called for each successive animation frame:
 startTime = time.clock()
-#frameList = open('frameList.txt','w')		# file containing list of images (to make movie)
+#frameList = open('frameList.txt','w')		# file containing list of images 
 def nextFrame(arg):							# (arg is the frame number, which we don't need)
 	global startTime
 	if performanceData and (arg%100 == 0) and (arg > 0):
