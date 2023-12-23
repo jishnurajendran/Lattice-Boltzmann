@@ -1,0 +1,19 @@
+# This CITATION.cff file was generated with cffinit.
+# Visit https://bit.ly/cffinit to generate yours today!
+
+cff-version: 1.2.0
+title: >-
+  Fluid Simulation with a simple barrier with Lattice
+  Boltzmann method 
+message: >-
+  If you use this software, please cite it using the
+  metadata from this file.
+type: software
+authors:
+  - given-names: Jishnu Rajendran
+    email: jishnu.rajendran@dfa.unict.it
+    affiliation: 'DFA, UNICT'
+identifiers:
+  - type: url
+    value: 'https://github.com/jishnurajendran/Lattice-Boltzmann'
+repository-code: 'https://github.com/jishnurajendran/Lattice-Boltzmann'

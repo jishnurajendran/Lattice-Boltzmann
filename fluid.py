@@ -69,6 +69,18 @@ def stream():
 
 # Collide particles within each cell to redistribute velocities (can be optimized a little more):
 def collide():
+	"""
+	Calculates the collision step of the Lattice Boltzmann Method (LBM) algorithm.
+
+	Updates the macroscopic variables `rho`, `ux`, and `uy` based on the population
+	distributions `n0`, `nN`, `nS`, `nE`, `nW`, `nNE`, `nNW`, `nSE`, and `nSW`.
+
+	Parameters:
+	None
+
+	Returns:
+	None
+	"""
 	global rho, ux, uy, n0, nN, nS, nE, nW, nNE, nNW, nSE, nSW
 	rho = n0 + nN + nS + nE + nW + nNE + nSE + nNW + nSW
 	ux = (nE + nNE + nSE - nW - nNW - nSW) / rho
@@ -98,6 +110,16 @@ def collide():
 
 # Compute curl of the  velocity field:
 def curl(ux, uy):
+	"""
+	Calculates the curl of a vector field.
+
+	Parameters:
+		ux (numpy.ndarray): The x-component of the vector field.
+		uy (numpy.ndarray): The y-component of the vector field.
+
+	Returns:
+		numpy.ndarray: The curl of the vector field.
+	"""
 	return numpy.roll(uy,-1,axis=1) - numpy.roll(uy,1,axis=1) - numpy.roll(ux,-1,axis=0) + numpy.roll(ux,1,axis=0)
 
 # for animation.
