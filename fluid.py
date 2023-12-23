@@ -32,7 +32,7 @@ uy = (nN + nNE + nNW - nS - nSE - nSW) / rho				# macroscopic y velocity
 
 # Initialize barriers:
 barrier = numpy.zeros((height,width), bool)						# True wherever there's a barrier
-barrier[(height/2)-8:(height/2)+8, (height/2)-4:(height/2)+4] = True			# simple linear barrier
+barrier[(height//2)-8:(height//2)+8, (height//2)-4:(height//2)+4] = True			# simple linear barrier
 barrierN = numpy.roll(barrier,  1, axis=0)						# sites just north of barriers
 barrierS = numpy.roll(barrier, -1, axis=0)						# sites just south of barriers
 barrierE = numpy.roll(barrier,  1, axis=1)						
@@ -110,13 +110,13 @@ bImageArray[barrier,3] = 255								# set alpha=255 barrier sites only
 barrierImage = matplotlib.pyplot.imshow(bImageArray, origin='lower', interpolation='none')
 
 # Function called for each successive animation frame:
-startTime = time.clock()
+startTime = time.perf_counter()
 #frameList = open('frameList.txt','w')		# file containing list of images 
 def nextFrame(arg):							# (arg is the frame number, which we don't need)
 	global startTime
 	if performanceData and (arg%100 == 0) and (arg > 0):
-		endTime = time.clock()
-		print "%1.1f" % (100/(endTime-startTime)), 'frames per second'
+		endTime = time.perf_counter()
+		print(  "%1.1f" % (100/(endTime-startTime)), 'frames per second' )
 		startTime = endTime
 	#frameName = "frame%04d.png" % arg
 	#matplotlib.pyplot.savefig(frameName)
