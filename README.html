@@ -1,0 +1,229 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+<head>
+<!-- 2023-12-27 Wed 19:06 -->
+<meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Lattice Boltzmann</title>
+<meta name="author" content="Jishnu" />
+<meta name="generator" content="Org Mode" />
+<link rel="stylesheet" type="text/css" href="notebook.css" />
+</head>
+<body>
+<div id="content" class="content">
+<h1 class="title">Lattice Boltzmann</h1>
+<div id="outline-container-org82aab14" class="outline-2">
+<h2 id="org82aab14">Lattice Boltzmann simulation of a 2D square domain with rigid barrier</h2>
+<div class="outline-text-2" id="text-org82aab14">
+<div class="abstract" id="org74ebb74">
+<p>
+Lattice Boltzmann methods are a family of computational methods for simulating the evolution of fluid flows in systems.
+In this notebook, we implement a 2D square domain with rigid barrier using Lattice Boltzmann method.
+The simulation is based on the LBM model and the boundary conditions are discussed in the following sections.
+Instead of solving the <span class="underline">Navier–Stokes</span> equations directly, a fluid density on a lattice is simulated with streaming and collision (relaxation) processes. As a versatile model, the dynamics of the fluid can be simulated fairly straight. The LBM model can be made to mimic common fluid behaviour like vapour/liquid coexistence, and so fluid systems such as liquid droplets can be simulated.
+</p>
+
+</div>
+</div>
+</div>
+<div id="outline-container-org7f535a3" class="outline-2">
+<h2 id="org7f535a3">Model details about simulation</h2>
+<div class="outline-text-2" id="text-org7f535a3">
+<div class="org-src-container">
+<pre class="src src-python"><span style="color: #83898d;">"""</span>
+<span style="color: #83898d;">Lattice-Boltzmann method for fluid simulation</span>
+<span style="color: #83898d;">Simple rectangular barrier</span>
+<span style="color: #83898d;">@author: Jishnu</span>
+<span style="color: #83898d;">"""</span>
+<span style="color: #51afef;">import</span> numpy, time, matplotlib.pyplot, matplotlib.animation
+
+<span style="color: #dcaeea;">height</span> = <span style="color: #da8548; font-weight: bold;">80</span>                     <span style="color: #5B6268;"># </span><span style="color: #5B6268;">dimensions of lattice</span>
+<span style="color: #dcaeea;">width</span> = <span style="color: #da8548; font-weight: bold;">200</span>
+<span style="color: #dcaeea;">viscosity</span> = <span style="color: #da8548; font-weight: bold;">0.02</span>                    <span style="color: #5B6268;"># </span><span style="color: #5B6268;">viscosity</span>
+<span style="color: #dcaeea;">omega</span> = <span style="color: #da8548; font-weight: bold;">1</span> / (<span style="color: #da8548; font-weight: bold;">3</span>*viscosity + <span style="color: #da8548; font-weight: bold;">0.5</span>)             <span style="color: #5B6268;"># </span><span style="color: #5B6268;">parameter for relaxation</span>
+<span style="color: #dcaeea;">u0</span> = <span style="color: #da8548; font-weight: bold;">0.1</span>                        <span style="color: #5B6268;"># </span><span style="color: #5B6268;">initial and in-flow speed</span>
+<span style="color: #dcaeea;">f_n</span> = <span style="color: #da8548; font-weight: bold;">4.0</span>/<span style="color: #da8548; font-weight: bold;">9.0</span>                       <span style="color: #5B6268;"># </span><span style="color: #5B6268;">lattice-Boltzmann weight factors</span>
+<span style="color: #dcaeea;">o_n</span>   = <span style="color: #da8548; font-weight: bold;">1.0</span>/<span style="color: #da8548; font-weight: bold;">9.0</span>
+<span style="color: #dcaeea;">o_36</span>  = <span style="color: #da8548; font-weight: bold;">1.0</span>/<span style="color: #da8548; font-weight: bold;">36.0</span>
+<span style="color: #dcaeea;">performanceData</span> = <span style="color: #a9a1e1;">True</span>                  <span style="color: #5B6268;"># </span><span style="color: #5B6268;">True if performance data is needed</span>
+</pre>
+</div>
+
+<p>
+Here we initialize the dimensions of the domain and the initial conditions of fluid flow. We will choose steady flow and initialise the density and velocity arrays.
+</p>
+
+<div class="org-src-container">
+<pre class="src src-python"><span style="color: #5B6268;"># </span><span style="color: #5B6268;">Initialize arrays --steady rightward flow:</span>
+<span style="color: #dcaeea;">n0</span> = f_n * (numpy.ones((height,width)) - <span style="color: #da8548; font-weight: bold;">1.5</span>*u0**<span style="color: #da8548; font-weight: bold;">2</span>) <span style="color: #5B6268;"># </span><span style="color: #5B6268;">particle densities along 9 directions</span>
+<span style="color: #dcaeea;">nN</span> = o_n * (numpy.ones((height,width)) - <span style="color: #da8548; font-weight: bold;">1.5</span>*u0**<span style="color: #da8548; font-weight: bold;">2</span>)
+<span style="color: #dcaeea;">nS</span> = o_n * (numpy.ones((height,width)) - <span style="color: #da8548; font-weight: bold;">1.5</span>*u0**<span style="color: #da8548; font-weight: bold;">2</span>)
+<span style="color: #dcaeea;">nE</span> = o_n * (numpy.ones((height,width)) + <span style="color: #da8548; font-weight: bold;">3</span>*u0 + <span style="color: #da8548; font-weight: bold;">4.5</span>*u0**<span style="color: #da8548; font-weight: bold;">2</span> - <span style="color: #da8548; font-weight: bold;">1.5</span>*u0**<span style="color: #da8548; font-weight: bold;">2</span>)
+<span style="color: #dcaeea;">nW</span> = o_n * (numpy.ones((height,width)) - <span style="color: #da8548; font-weight: bold;">3</span>*u0 + <span style="color: #da8548; font-weight: bold;">4.5</span>*u0**<span style="color: #da8548; font-weight: bold;">2</span> - <span style="color: #da8548; font-weight: bold;">1.5</span>*u0**<span style="color: #da8548; font-weight: bold;">2</span>)
+<span style="color: #dcaeea;">nNE</span> = o_36 * (numpy.ones((height,width)) + <span style="color: #da8548; font-weight: bold;">3</span>*u0 + <span style="color: #da8548; font-weight: bold;">4.5</span>*u0**<span style="color: #da8548; font-weight: bold;">2</span> - <span style="color: #da8548; font-weight: bold;">1.5</span>*u0**<span style="color: #da8548; font-weight: bold;">2</span>)
+<span style="color: #dcaeea;">nSE</span> = o_36 * (numpy.ones((height,width)) + <span style="color: #da8548; font-weight: bold;">3</span>*u0 + <span style="color: #da8548; font-weight: bold;">4.5</span>*u0**<span style="color: #da8548; font-weight: bold;">2</span> - <span style="color: #da8548; font-weight: bold;">1.5</span>*u0**<span style="color: #da8548; font-weight: bold;">2</span>)
+<span style="color: #dcaeea;">nNW</span> = o_36 * (numpy.ones((height,width)) - <span style="color: #da8548; font-weight: bold;">3</span>*u0 + <span style="color: #da8548; font-weight: bold;">4.5</span>*u0**<span style="color: #da8548; font-weight: bold;">2</span> - <span style="color: #da8548; font-weight: bold;">1.5</span>*u0**<span style="color: #da8548; font-weight: bold;">2</span>)
+<span style="color: #dcaeea;">nSW</span> = o_36 * (numpy.ones((height,width)) - <span style="color: #da8548; font-weight: bold;">3</span>*u0 + <span style="color: #da8548; font-weight: bold;">4.5</span>*u0**<span style="color: #da8548; font-weight: bold;">2</span> - <span style="color: #da8548; font-weight: bold;">1.5</span>*u0**<span style="color: #da8548; font-weight: bold;">2</span>)
+<span style="color: #dcaeea;">rho</span> = n0 + nN + nS + nE + nW + nNE + nSE + nNW + nSW            <span style="color: #5B6268;"># </span><span style="color: #5B6268;">macroscopic density</span>
+<span style="color: #dcaeea;">ux</span> = (nE + nNE + nSE - nW - nNW - nSW) / rho                <span style="color: #5B6268;"># </span><span style="color: #5B6268;">macroscopic x velocity</span>
+<span style="color: #dcaeea;">uy</span> = (nN + nNE + nNW - nS - nSE - nSW) / rho                <span style="color: #5B6268;"># </span><span style="color: #5B6268;">macroscopic y velocity</span>
+</pre>
+</div>
+</div>
+<div id="outline-container-org2051021" class="outline-3">
+<h3 id="org2051021">Effects of a Barrier in a steady flow</h3>
+<div class="outline-text-3" id="text-org2051021">
+<p>
+We choose a simple rectangle barrier in the domain.
+</p>
+
+<div class="org-src-container">
+<pre class="src src-python"><span style="color: #dcaeea;">barrier</span> = numpy.zeros((height,width), <span style="color: #c678dd;">bool</span>)                     <span style="color: #5B6268;"># </span><span style="color: #5B6268;">True wherever there's a barrier</span>
+<span style="color: #dcaeea;">barrier</span>[(height//<span style="color: #da8548; font-weight: bold;">2</span>)-<span style="color: #da8548; font-weight: bold;">8</span>:(height//<span style="color: #da8548; font-weight: bold;">2</span>)+<span style="color: #da8548; font-weight: bold;">8</span>, (height//<span style="color: #da8548; font-weight: bold;">2</span>)-<span style="color: #da8548; font-weight: bold;">4</span>:(height//<span style="color: #da8548; font-weight: bold;">2</span>)+<span style="color: #da8548; font-weight: bold;">4</span>] = <span style="color: #a9a1e1;">True</span>            <span style="color: #5B6268;"># </span><span style="color: #5B6268;">simple linear barrier</span>
+<span style="color: #dcaeea;">barrierN</span> = numpy.roll(barrier,  <span style="color: #da8548; font-weight: bold;">1</span>, axis=<span style="color: #da8548; font-weight: bold;">0</span>)                      <span style="color: #5B6268;"># </span><span style="color: #5B6268;">sites just north of barriers</span>
+<span style="color: #dcaeea;">barrierS</span> = numpy.roll(barrier, -<span style="color: #da8548; font-weight: bold;">1</span>, axis=<span style="color: #da8548; font-weight: bold;">0</span>)                      <span style="color: #5B6268;"># </span><span style="color: #5B6268;">sites just south of barriers</span>
+<span style="color: #dcaeea;">barrierE</span> = numpy.roll(barrier,  <span style="color: #da8548; font-weight: bold;">1</span>, axis=<span style="color: #da8548; font-weight: bold;">1</span>)
+<span style="color: #dcaeea;">barrierW</span> = numpy.roll(barrier, -<span style="color: #da8548; font-weight: bold;">1</span>, axis=<span style="color: #da8548; font-weight: bold;">1</span>)
+<span style="color: #dcaeea;">barrierNE</span> = numpy.roll(barrierN,  <span style="color: #da8548; font-weight: bold;">1</span>, axis=<span style="color: #da8548; font-weight: bold;">1</span>)
+<span style="color: #dcaeea;">barrierNW</span> = numpy.roll(barrierN, -<span style="color: #da8548; font-weight: bold;">1</span>, axis=<span style="color: #da8548; font-weight: bold;">1</span>)
+<span style="color: #dcaeea;">barrierSE</span> = numpy.roll(barrierS,  <span style="color: #da8548; font-weight: bold;">1</span>, axis=<span style="color: #da8548; font-weight: bold;">1</span>)
+<span style="color: #dcaeea;">barrierSW</span> = numpy.roll(barrierS, -<span style="color: #da8548; font-weight: bold;">1</span>, axis=<span style="color: #da8548; font-weight: bold;">1</span>)
+</pre>
+</div>
+</div>
+</div>
+</div>
+<div id="outline-container-org354fed0" class="outline-2">
+<h2 id="org354fed0">Move all particles by one step along their directions of motion (pbc):</h2>
+<div class="outline-text-2" id="text-org354fed0">
+<div class="org-src-container">
+<pre class="src src-python">    <span style="color: #51afef;">def</span> <span style="color: #c678dd;">stream</span>():
+    <span style="color: #51afef;">global</span> nN, nS, nE, nW, nNE, nNW, nSE, nSW
+    <span style="color: #dcaeea;">nN</span>  = numpy.roll(nN,   <span style="color: #da8548; font-weight: bold;">1</span>, axis=<span style="color: #da8548; font-weight: bold;">0</span>)           <span style="color: #5B6268;"># </span><span style="color: #5B6268;">axis 0 is north-south; + direction is north</span>
+    <span style="color: #dcaeea;">nNE</span> = numpy.roll(nNE,  <span style="color: #da8548; font-weight: bold;">1</span>, axis=<span style="color: #da8548; font-weight: bold;">0</span>)
+    <span style="color: #dcaeea;">nNW</span> = numpy.roll(nNW,  <span style="color: #da8548; font-weight: bold;">1</span>, axis=<span style="color: #da8548; font-weight: bold;">0</span>)
+    <span style="color: #dcaeea;">nS</span>  = numpy.roll(nS,  -<span style="color: #da8548; font-weight: bold;">1</span>, axis=<span style="color: #da8548; font-weight: bold;">0</span>)
+    <span style="color: #dcaeea;">nSE</span> = numpy.roll(nSE, -<span style="color: #da8548; font-weight: bold;">1</span>, axis=<span style="color: #da8548; font-weight: bold;">0</span>)
+    <span style="color: #dcaeea;">nSW</span> = numpy.roll(nSW, -<span style="color: #da8548; font-weight: bold;">1</span>, axis=<span style="color: #da8548; font-weight: bold;">0</span>)
+    <span style="color: #dcaeea;">nE</span>  = numpy.roll(nE,   <span style="color: #da8548; font-weight: bold;">1</span>, axis=<span style="color: #da8548; font-weight: bold;">1</span>)           <span style="color: #5B6268;"># </span><span style="color: #5B6268;">axis 1 is east-west; + direction is east</span>
+    <span style="color: #dcaeea;">nNE</span> = numpy.roll(nNE,  <span style="color: #da8548; font-weight: bold;">1</span>, axis=<span style="color: #da8548; font-weight: bold;">1</span>)
+    <span style="color: #dcaeea;">nSE</span> = numpy.roll(nSE,  <span style="color: #da8548; font-weight: bold;">1</span>, axis=<span style="color: #da8548; font-weight: bold;">1</span>)
+    <span style="color: #dcaeea;">nW</span>  = numpy.roll(nW,  -<span style="color: #da8548; font-weight: bold;">1</span>, axis=<span style="color: #da8548; font-weight: bold;">1</span>)
+    <span style="color: #dcaeea;">nNW</span> = numpy.roll(nNW, -<span style="color: #da8548; font-weight: bold;">1</span>, axis=<span style="color: #da8548; font-weight: bold;">1</span>)
+    <span style="color: #dcaeea;">nSW</span> = numpy.roll(nSW, -<span style="color: #da8548; font-weight: bold;">1</span>, axis=<span style="color: #da8548; font-weight: bold;">1</span>)
+    <span style="color: #5B6268;"># </span><span style="color: #5B6268;">Using boolean arrays to handle barrier collisions (bounce-back):</span>
+    <span style="color: #dcaeea;">nN</span>[barrierN] = nS[barrier]
+    <span style="color: #dcaeea;">nS</span>[barrierS] = nN[barrier]
+    <span style="color: #dcaeea;">nE</span>[barrierE] = nW[barrier]
+    <span style="color: #dcaeea;">nW</span>[barrierW] = nE[barrier]
+    <span style="color: #dcaeea;">nNE</span>[barrierNE] = nSW[barrier]
+    <span style="color: #dcaeea;">nNW</span>[barrierNW] = nSE[barrier]
+    <span style="color: #dcaeea;">nSE</span>[barrierSE] = nNW[barrier]
+    <span style="color: #dcaeea;">nSW</span>[barrierSW] = nNE[barrier]
+</pre>
+</div>
+
+
+
+<div class="org-src-container">
+<pre class="src src-python"><span style="color: #51afef;">def</span> <span style="color: #c678dd;">collide</span>():
+    <span style="color: #83898d;">"""</span>
+<span style="color: #83898d;">    Calculates the collision step of the Lattice Boltzmann Method (LBM) algorithm.</span>
+
+<span style="color: #83898d;">    Updates the macroscopic variables `rho`, `ux`, and `uy` based on the population</span>
+<span style="color: #83898d;">    distributions `n0`, `nN`, `nS`, `nE`, `nW`, `nNE`, `nNW`, `nSE`, and `nSW`.</span>
+
+<span style="color: #83898d;">    Parameters:</span>
+<span style="color: #83898d;">    None</span>
+
+<span style="color: #83898d;">    Returns:</span>
+<span style="color: #83898d;">    None</span>
+<span style="color: #83898d;">    """</span>
+    <span style="color: #51afef;">global</span> rho, ux, uy, n0, nN, nS, nE, nW, nNE, nNW, nSE, nSW
+    <span style="color: #dcaeea;">rho</span> = n0 + nN + nS + nE + nW + nNE + nSE + nNW + nSW
+    <span style="color: #dcaeea;">ux</span> = (nE + nNE + nSE - nW - nNW - nSW) / rho
+    <span style="color: #dcaeea;">uy</span> = (nN + nNE + nNW - nS - nSE - nSW) / rho
+    <span style="color: #dcaeea;">ux2</span> = ux * ux
+    <span style="color: #dcaeea;">uy2</span> = uy * uy
+    <span style="color: #dcaeea;">u2</span> = ux2 + uy2
+    <span style="color: #dcaeea;">omu215</span> = <span style="color: #da8548; font-weight: bold;">1</span> - <span style="color: #da8548; font-weight: bold;">1.5</span>*u2
+    <span style="color: #dcaeea;">uxuy</span> = ux * uy
+    <span style="color: #dcaeea;">n0</span> = (<span style="color: #da8548; font-weight: bold;">1</span>-omega)*n0 + omega * f_n * rho * omu215
+    <span style="color: #dcaeea;">nN</span> = (<span style="color: #da8548; font-weight: bold;">1</span>-omega)*nN + omega * o_n * rho * (omu215 + <span style="color: #da8548; font-weight: bold;">3</span>*uy + <span style="color: #da8548; font-weight: bold;">4.5</span>*uy2)
+    <span style="color: #dcaeea;">nS</span> = (<span style="color: #da8548; font-weight: bold;">1</span>-omega)*nS + omega * o_n * rho * (omu215 - <span style="color: #da8548; font-weight: bold;">3</span>*uy + <span style="color: #da8548; font-weight: bold;">4.5</span>*uy2)
+    <span style="color: #dcaeea;">nE</span> = (<span style="color: #da8548; font-weight: bold;">1</span>-omega)*nE + omega * o_n * rho * (omu215 + <span style="color: #da8548; font-weight: bold;">3</span>*ux + <span style="color: #da8548; font-weight: bold;">4.5</span>*ux2)
+    <span style="color: #dcaeea;">nW</span> = (<span style="color: #da8548; font-weight: bold;">1</span>-omega)*nW + omega * o_n * rho * (omu215 - <span style="color: #da8548; font-weight: bold;">3</span>*ux + <span style="color: #da8548; font-weight: bold;">4.5</span>*ux2)
+    <span style="color: #dcaeea;">nNE</span> = (<span style="color: #da8548; font-weight: bold;">1</span>-omega)*nNE + omega * o_36 * rho * (omu215 + <span style="color: #da8548; font-weight: bold;">3</span>*(ux+uy) + <span style="color: #da8548; font-weight: bold;">4.5</span>*(u2+<span style="color: #da8548; font-weight: bold;">2</span>*uxuy))
+    <span style="color: #dcaeea;">nNW</span> = (<span style="color: #da8548; font-weight: bold;">1</span>-omega)*nNW + omega * o_36 * rho * (omu215 + <span style="color: #da8548; font-weight: bold;">3</span>*(-ux+uy) + <span style="color: #da8548; font-weight: bold;">4.5</span>*(u2-<span style="color: #da8548; font-weight: bold;">2</span>*uxuy))
+    <span style="color: #dcaeea;">nSE</span> = (<span style="color: #da8548; font-weight: bold;">1</span>-omega)*nSE + omega * o_36 * rho * (omu215 + <span style="color: #da8548; font-weight: bold;">3</span>*(ux-uy) + <span style="color: #da8548; font-weight: bold;">4.5</span>*(u2-<span style="color: #da8548; font-weight: bold;">2</span>*uxuy))
+    <span style="color: #dcaeea;">nSW</span> = (<span style="color: #da8548; font-weight: bold;">1</span>-omega)*nSW + omega * o_36 * rho * (omu215 + <span style="color: #da8548; font-weight: bold;">3</span>*(-ux-uy) + <span style="color: #da8548; font-weight: bold;">4.5</span>*(u2+<span style="color: #da8548; font-weight: bold;">2</span>*uxuy))
+    <span style="color: #5B6268;"># </span><span style="color: #5B6268;">Force steady rightward flow at ends</span>
+    <span style="color: #5B6268;"># </span><span style="color: #5B6268;">no need to set 0, N, and S component</span>
+    <span style="color: #dcaeea;">nE</span>[:,<span style="color: #da8548; font-weight: bold;">0</span>] = o_n * (<span style="color: #da8548; font-weight: bold;">1</span> + <span style="color: #da8548; font-weight: bold;">3</span>*u0 + <span style="color: #da8548; font-weight: bold;">4.5</span>*u0**<span style="color: #da8548; font-weight: bold;">2</span> - <span style="color: #da8548; font-weight: bold;">1.5</span>*u0**<span style="color: #da8548; font-weight: bold;">2</span>)
+    <span style="color: #dcaeea;">nW</span>[:,<span style="color: #da8548; font-weight: bold;">0</span>] = o_n * (<span style="color: #da8548; font-weight: bold;">1</span> - <span style="color: #da8548; font-weight: bold;">3</span>*u0 + <span style="color: #da8548; font-weight: bold;">4.5</span>*u0**<span style="color: #da8548; font-weight: bold;">2</span> - <span style="color: #da8548; font-weight: bold;">1.5</span>*u0**<span style="color: #da8548; font-weight: bold;">2</span>)
+    <span style="color: #dcaeea;">nNE</span>[:,<span style="color: #da8548; font-weight: bold;">0</span>] = o_36 * (<span style="color: #da8548; font-weight: bold;">1</span> + <span style="color: #da8548; font-weight: bold;">3</span>*u0 + <span style="color: #da8548; font-weight: bold;">4.5</span>*u0**<span style="color: #da8548; font-weight: bold;">2</span> - <span style="color: #da8548; font-weight: bold;">1.5</span>*u0**<span style="color: #da8548; font-weight: bold;">2</span>)
+    <span style="color: #dcaeea;">nSE</span>[:,<span style="color: #da8548; font-weight: bold;">0</span>] = o_36 * (<span style="color: #da8548; font-weight: bold;">1</span> + <span style="color: #da8548; font-weight: bold;">3</span>*u0 + <span style="color: #da8548; font-weight: bold;">4.5</span>*u0**<span style="color: #da8548; font-weight: bold;">2</span> - <span style="color: #da8548; font-weight: bold;">1.5</span>*u0**<span style="color: #da8548; font-weight: bold;">2</span>)
+    <span style="color: #dcaeea;">nNW</span>[:,<span style="color: #da8548; font-weight: bold;">0</span>] = o_36 * (<span style="color: #da8548; font-weight: bold;">1</span> - <span style="color: #da8548; font-weight: bold;">3</span>*u0 + <span style="color: #da8548; font-weight: bold;">4.5</span>*u0**<span style="color: #da8548; font-weight: bold;">2</span> - <span style="color: #da8548; font-weight: bold;">1.5</span>*u0**<span style="color: #da8548; font-weight: bold;">2</span>)
+    <span style="color: #dcaeea;">nSW</span>[:,<span style="color: #da8548; font-weight: bold;">0</span>] = o_36 * (<span style="color: #da8548; font-weight: bold;">1</span> - <span style="color: #da8548; font-weight: bold;">3</span>*u0 + <span style="color: #da8548; font-weight: bold;">4.5</span>*u0**<span style="color: #da8548; font-weight: bold;">2</span> - <span style="color: #da8548; font-weight: bold;">1.5</span>*u0**<span style="color: #da8548; font-weight: bold;">2</span>)
+</pre>
+</div>
+
+<div class="org-src-container">
+<pre class="src src-python"><span style="color: #5B6268;"># </span><span style="color: #5B6268;">Compute curl of the  velocity field:</span>
+<span style="color: #51afef;">def</span> <span style="color: #c678dd;">curl</span>(ux, uy):
+    <span style="color: #83898d;">"""</span>
+<span style="color: #83898d;">    Calculates the curl of a vector field.</span>
+
+<span style="color: #83898d;">    Parameters:</span>
+<span style="color: #83898d;">        ux (numpy.ndarray): The x-component of the vector field.</span>
+<span style="color: #83898d;">        uy (numpy.ndarray): The y-component of the vector field.</span>
+
+<span style="color: #83898d;">    Returns:</span>
+<span style="color: #83898d;">        numpy.ndarray: The curl of the vector field.</span>
+<span style="color: #83898d;">    """</span>
+    <span style="color: #51afef;">return</span> numpy.roll(uy,-<span style="color: #da8548; font-weight: bold;">1</span>,axis=<span style="color: #da8548; font-weight: bold;">1</span>) - numpy.roll(uy,<span style="color: #da8548; font-weight: bold;">1</span>,axis=<span style="color: #da8548; font-weight: bold;">1</span>) - numpy.roll(ux,-<span style="color: #da8548; font-weight: bold;">1</span>,axis=<span style="color: #da8548; font-weight: bold;">0</span>) + numpy.roll(ux,<span style="color: #da8548; font-weight: bold;">1</span>,axis=<span style="color: #da8548; font-weight: bold;">0</span>)
+</pre>
+</div>
+</div>
+</div>
+<div id="outline-container-org00f0bb7" class="outline-2">
+<h2 id="org00f0bb7">Visualization of the simulation</h2>
+<div class="outline-text-2" id="text-org00f0bb7">
+<div class="org-src-container">
+<pre class="src src-python"><span style="color: #5B6268;"># </span><span style="color: #5B6268;">for animation.</span>
+<span style="color: #dcaeea;">theFig</span> = matplotlib.pyplot.figure(figsize=(<span style="color: #da8548; font-weight: bold;">8</span>,<span style="color: #da8548; font-weight: bold;">3</span>))
+<span style="color: #dcaeea;">fluidImage</span> = matplotlib.pyplot.imshow(curl(ux, uy), origin=<span style="color: #98be65;">'lower'</span>, norm=matplotlib.pyplot.Normalize(-.<span style="color: #da8548; font-weight: bold;">1</span>,.<span style="color: #da8548; font-weight: bold;">1</span>),
+                                    cmap=matplotlib.pyplot.get_cmap(<span style="color: #98be65;">'jet'</span>), interpolation=<span style="color: #98be65;">'none'</span>)
+<span style="color: #dcaeea;">bImageArray</span> = numpy.zeros((height, width, <span style="color: #da8548; font-weight: bold;">4</span>), numpy.uint8)  <span style="color: #5B6268;"># </span><span style="color: #5B6268;">an RGBA image</span>
+<span style="color: #dcaeea;">bImageArray</span>[barrier,<span style="color: #da8548; font-weight: bold;">3</span>] = <span style="color: #da8548; font-weight: bold;">255</span>                                <span style="color: #5B6268;"># </span><span style="color: #5B6268;">set alpha=255 barrier sites only</span>
+<span style="color: #dcaeea;">barrierImage</span> = matplotlib.pyplot.imshow(bImageArray, origin=<span style="color: #98be65;">'lower'</span>, interpolation=<span style="color: #98be65;">'none'</span>)
+
+<span style="color: #5B6268;"># </span><span style="color: #5B6268;">Function called for each successive animation frame:</span>
+<span style="color: #dcaeea;">startTime</span> = time.perf_counter()
+<span style="color: #5B6268;">#</span><span style="color: #5B6268;">frameList = open('frameList.txt','w')      # file containing list of images</span>
+<span style="color: #51afef;">def</span> <span style="color: #c678dd;">nextFrame</span>(arg):                         <span style="color: #5B6268;"># </span><span style="color: #5B6268;">(arg is the frame number, which we don't need)</span>
+    <span style="color: #51afef;">global</span> startTime
+    <span style="color: #51afef;">if</span> performanceData <span style="color: #51afef;">and</span> (arg%<span style="color: #da8548; font-weight: bold;">100</span> == <span style="color: #da8548; font-weight: bold;">0</span>) <span style="color: #51afef;">and</span> (arg &gt; <span style="color: #da8548; font-weight: bold;">0</span>):
+        <span style="color: #dcaeea;">endTime</span> = time.perf_counter()
+        <span style="color: #c678dd;">print</span>(  <span style="color: #98be65;">"%1.1f"</span> % (<span style="color: #da8548; font-weight: bold;">100</span>/(endTime-startTime)), <span style="color: #98be65;">'frames per second'</span> )
+        <span style="color: #dcaeea;">startTime</span> = endTime
+    <span style="color: #5B6268;">#</span><span style="color: #5B6268;">frameName = "frame%04d.png" % arg</span>
+    <span style="color: #5B6268;">#</span><span style="color: #5B6268;">matplotlib.pyplot.savefig(frameName)</span>
+    <span style="color: #5B6268;">#</span><span style="color: #5B6268;">frameList.write(frameName + '\n')</span>
+    <span style="color: #51afef;">for</span> step <span style="color: #51afef;">in</span> <span style="color: #c678dd;">range</span>(<span style="color: #da8548; font-weight: bold;">15</span>):                  <span style="color: #5B6268;"># </span><span style="color: #5B6268;">adjust number of steps for smooth animation</span>
+        stream()
+        collide()
+    fluidImage.set_array(curl(ux, uy))
+    <span style="color: #51afef;">return</span> (fluidImage, barrierImage)       <span style="color: #5B6268;"># </span><span style="color: #5B6268;">return the figure elements to redraw</span>
+
+<span style="color: #dcaeea;">animate</span> = matplotlib.animation.FuncAnimation(theFig, nextFrame, interval=<span style="color: #da8548; font-weight: bold;">0.5</span>, blit=<span style="color: #a9a1e1;">True</span>)
+matplotlib.pyplot.show()
+</pre>
+</div>
+</div>
+</div>
+</div>
+</body>
+</html>

@@ -42,8 +42,23 @@ barrierNW = numpy.roll(barrierN, -1, axis=1)
 barrierSE = numpy.roll(barrierS,  1, axis=1)
 barrierSW = numpy.roll(barrierS, -1, axis=1)
 
-# Move all particles by one step along their directions of motion (pbc):
+
 def stream():
+	"""
+	Move all particles by one step along their directions of motion (pbc):
+
+	- `nN`: Numpy array representing particles moving in the north direction.
+	- `nS`: Numpy array representing particles moving in the south direction.
+	- `nE`: Numpy array representing particles moving in the east direction.
+	- `nW`: Numpy array representing particles moving in the west direction.
+	- `nNE`: Numpy array representing particles moving in the northeast direction.
+	- `nNW`: Numpy array representing particles moving in the northwest direction.
+	- `nSE`: Numpy array representing particles moving in the southeast direction.
+	- `nSW`: Numpy array representing particles moving in the southwest direction.
+
+	Returns:
+	None
+	"""
 	global nN, nS, nE, nW, nNE, nNW, nSE, nSW
 	nN  = numpy.roll(nN,   1, axis=0)			# axis 0 is north-south; + direction is north
 	nNE = numpy.roll(nNE,  1, axis=0)
@@ -126,7 +141,6 @@ def curl(ux, uy):
 theFig = matplotlib.pyplot.figure(figsize=(8,3))
 fluidImage = matplotlib.pyplot.imshow(curl(ux, uy), origin='lower', norm=matplotlib.pyplot.Normalize(-.1,.1),
 									cmap=matplotlib.pyplot.get_cmap('jet'), interpolation='none')
-		# Taken from http://www.loria.fr/~rougier/teaching/matplotlib/#colormaps
 bImageArray = numpy.zeros((height, width, 4), numpy.uint8)	# an RGBA image
 bImageArray[barrier,3] = 255								# set alpha=255 barrier sites only
 barrierImage = matplotlib.pyplot.imshow(bImageArray, origin='lower', interpolation='none')
@@ -140,9 +154,9 @@ def nextFrame(arg):							# (arg is the frame number, which we don't need)
 		endTime = time.perf_counter()
 		print(  "%1.1f" % (100/(endTime-startTime)), 'frames per second' )
 		startTime = endTime
-	#frameName = "frame%04d.png" % arg
-	#matplotlib.pyplot.savefig(frameName)
-	#frameList.write(frameName + '\n')
+	# frameName = "images/frame%04d.png" % arg
+	# matplotlib.pyplot.savefig(frameName)
+	# frameList.write(frameName + '\n')
 	for step in range(15):					# adjust number of steps for smooth animation
 		stream()
 		collide()
@@ -150,4 +164,6 @@ def nextFrame(arg):							# (arg is the frame number, which we don't need)
 	return (fluidImage, barrierImage)		# return the figure elements to redraw
 
 animate = matplotlib.animation.FuncAnimation(theFig, nextFrame, interval=0.5, blit=True)
+# save animation
 matplotlib.pyplot.show()
+
