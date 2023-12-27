@@ -1,14 +1,14 @@
-#+title: Lattice Boltzmann
+#+title: Lattice Boltzmann simulation
 #+author: Jishnu
-#+OPTIONS:   num:nil
-#+OPTIONS:   html-style:nil
-#+OPTIONS:   html-scripts:nil
-#+OPTIONS:   html-postamble:nil
-#+OPTIONS:   broken-links:mark
-#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="notebook.css" />
+#+subtitle: Jishnu Rajendran
+# #+OPTIONS:   num:nil
+# #+OPTIONS:   html-style:nil
+# #+OPTIONS:   html-scripts:nil
+# #+OPTIONS:   html-postamble:nil
+# #+OPTIONS:   broken-links:mark
+# #+HTML_HEAD: <link rel="stylesheet" type="text/css" href="notebook.css" />
 #+OPTIONS: toc:nil
 #+PROPERTY: header-args :tangle fluid_sim.py
-* Lattice Boltzmann simulation of a 2D square domain with rigid barrier
 
 #+begin_abstract
     Lattice Boltzmann methods are a family of computational methods for simulating the evolution of fluid flows in systems.
@@ -16,9 +16,9 @@
     The simulation is based on the LBM model and the boundary conditions are discussed in the following sections.
     Instead of solving the _Navier–Stokes_ equations directly, a fluid density on a lattice is simulated with streaming and collision (relaxation) processes. As a versatile model, the dynamics of the fluid can be simulated fairly straight. The LBM model can be made to mimic common fluid behaviour like vapour/liquid coexistence, and so fluid systems such as liquid droplets can be simulated.
 #+end_abstract
+* Lattice Boltzmann simulation of a 2D square domain with rigid barrier
 
-* Model details about simulation
-    #+begin_src python :tangle "fluid_sim.py"
+#+begin_src python :tangle "fluid_sim.py"
 """
 Lattice-Boltzmann method for fluid simulation
 Simple rectangular barrier
