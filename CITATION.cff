@@ -3,7 +3,7 @@
 
 cff-version: 1.2.0
 title: >-
-  Fluid Simulation with a simple barrier with Lattice
+  Fluid Simulation with a simple barrier in a 2D square lattice with Lattice
   Boltzmann method 
 message: >-
   If you use this software, please cite it using the
