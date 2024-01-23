@@ -14,7 +14,7 @@
     Lattice Boltzmann methods are a family of computational methods for simulating the evolution of fluid flows in systems.
     In this notebook, we implement a 2D square domain with rigid barrier using Lattice Boltzmann method.
     The simulation is based on the LBM model and the boundary conditions are discussed in the following sections.
-    Instead of solving the _Navier–Stokes_ equations directly, a fluid density on a lattice is simulated with streaming and collision (relaxation) processes. As a versatile model, the dynamics of the fluid can be simulated fairly straight. The LBM model can be made to mimic common fluid behaviour like vapour/liquid coexistence, and so fluid systems such as liquid droplets can be simulated.
+    Instead of solving the _Navier-Stokes_ equations directly, a fluid density on a lattice is simulated with streaming and collision (relaxation) processes. As a versatile model, the dynamics of the fluid can be simulated fairly straight. The LBM model can be made to mimic common fluid behaviour like vapour/liquid coexistence, and so fluid systems such as liquid droplets can be simulated.
 #+end_abstract
 * Lattice Boltzmann simulation of a 2D square domain with rigid barrier
 
