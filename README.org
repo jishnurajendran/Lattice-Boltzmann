@@ -10,6 +10,8 @@
 #+OPTIONS: toc:nil
 #+PROPERTY: header-args :tangle fluid_sim.py
 
+[[https://zenodo.org/doi/10.5281/zenodo.12716212][https://zenodo.org/badge/99260305.svg]]
+
 #+begin_abstract
     Lattice Boltzmann methods are a family of computational methods for simulating the evolution of fluid flows in systems.
     In this notebook, we implement a 2D square domain with rigid barrier using Lattice Boltzmann method.
